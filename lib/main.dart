@@ -66,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE (REAL ONLINE SEARCH API) ----------------
+// ---------------- LEAF PAGE (GLOBAL INSTANT HYBRID SEARCH) ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -87,13 +87,19 @@ class _LeafPageState extends State<LeafPage> {
   bool _isLoading = false;
   List<dynamic> _searchResults = [];
 
-  final List<Map<String, dynamic>> _trendingSongs = [
+  final List<Map<String, dynamic>> _globalSongs = [
     {"title": "Starboy", "artist": "The Weeknd", "color": Colors.red.shade900},
+    {"title": "Tu Pyaar Hai Kisi Aur Ka", "artist": "Kumar Sanu", "color": Colors.deepOrange.shade900},
     {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
-    {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.deepOrange.shade900},
+    {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.indigo.shade900},
     {"title": "Goth", "artist": "Sidewalks & Skeletons", "color": Colors.blueGrey.shade900},
     {"title": "Rave", "artist": "Dxrk", "color": Colors.purple.shade900},
     {"title": "Blinding Lights", "artist": "The Weeknd", "color": Colors.redAccent.shade700},
+    {"title": "Nightwork", "artist": "Kavinsky", "color": Colors.blue.shade900},
+    {"title": "Phonk Drift", "artist": "Kordhell", "color": Colors.deepPurple.shade900},
+    {"title": "Believer", "artist": "Imagine Dragons", "color": Colors.orange.shade900},
+    {"title": "Fade", "artist": "Alan Walker", "color": Colors.teal.shade900},
+    {"title": "Mockingbird", "artist": "Eminem", "color": Colors.brown.shade900},
   ];
 
   @override
@@ -102,7 +108,7 @@ class _LeafPageState extends State<LeafPage> {
     _startBannerAutoSwipe();
   }
 
-  void _searchSongs(String query) async {
+  void _searchMusic(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
         _searchResults = [];
@@ -115,23 +121,32 @@ class _LeafPageState extends State<LeafPage> {
       _isLoading = true;
     });
 
+    final localMatches = _globalSongs.where((s) => 
+      s['title'].toString().toLowerCase().contains(query.toLowerCase()) || 
+      s['artist'].toString().toLowerCase().contains(query.toLowerCase())
+    ).toList();
+
     try {
-      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=25');
+      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=30');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final apiResults = data['results'] ?? [];
+        
         setState(() {
-          _searchResults = data['results'] ?? [];
+          _searchResults = [...localMatches, ...apiResults];
           _isLoading = false;
         });
       } else {
         setState(() {
+          _searchResults = localMatches;
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
+        _searchResults = localMatches;
         _isLoading = false;
       });
     }
@@ -143,8 +158,8 @@ class _LeafPageState extends State<LeafPage> {
     });
 
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      _searchSongs(query);
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      _searchMusic(query);
     });
   }
 
@@ -212,7 +227,6 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
@@ -227,7 +241,7 @@ class _LeafPageState extends State<LeafPage> {
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     decoration: const InputDecoration(
                       icon: Icon(Icons.search, color: Colors.redAccent),
-                      hintText: "Search any song globally...",
+                      hintText: "Search any world song instantly...",
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                     ),
@@ -235,60 +249,54 @@ class _LeafPageState extends State<LeafPage> {
                 ),
               ),
 
-              // If searching, show online search results
               if (_searchQuery.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
                   child: Text(
-                    _isLoading ? "SEARCHING ONLINE..." : "ONLINE RESULTS (${_searchResults.length})", 
+                    _isLoading ? "SEARCHING..." : "SEARCH RESULTS (${_searchResults.length})", 
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)
                   ),
                 ),
-                _isLoading
+                _searchResults.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.all(40.0),
-                        child: Center(child: CircularProgressIndicator(color: Colors.redAccent)),
+                        child: Center(
+                          child: Text("No songs found!", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                        ),
                       )
-                    : _searchResults.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(40.0),
-                            child: Center(
-                              child: Text("No songs found online!", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                            ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _searchResults.length,
-                            itemBuilder: (context, index) {
-                              final song = _searchResults[index];
-                              final title = song['trackName'] ?? 'Unknown Track';
-                              final artist = song['artistName'] ?? 'Unknown Artist';
-                              final artwork = song['artworkUrl100'];
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _searchResults.length,
+                        itemBuilder: (context, index) {
+                          final song = _searchResults[index];
+                          final title = song['trackName'] ?? song['title'] ?? 'Unknown Track';
+                          final artist = song['artistName'] ?? song['artist'] ?? 'Unknown Artist';
+                          final artwork = song['artworkUrl100'];
+                          final color = song['color'] as Color? ?? Colors.red.shade900;
 
-                              return ListTile(
-                                leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: artwork != null 
-                                      ? Image.network(artwork, width: 44, height: 44, fit: BoxFit.cover)
-                                      : Container(width: 44, height: 44, color: Colors.red.shade900, child: const Icon(Icons.music_note, color: Colors.white)),
-                                ),
-                                title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                                subtitle: Text(artist, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                                trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent, size: 30),
-                                onTap: () => _playSong(title),
-                              );
-                            },
-                          ),
+                          return ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: artwork != null 
+                                  ? Image.network(artwork, width: 44, height: 44, fit: BoxFit.cover)
+                                  : Container(width: 44, height: 44, color: color, child: const Icon(Icons.music_note, color: Colors.white)),
+                            ),
+                            title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                            subtitle: Text(artist, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                            trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent, size: 30),
+                            onTap: () => _playSong(title),
+                          );
+                        },
+                      ],
               ] else ...[
-                // Trending Banners
                 SizedBox(
                   height: 210,
                   child: PageView.builder(
                     controller: _bannerController,
-                    itemCount: _trendingSongs.length,
+                    itemCount: 6,
                     itemBuilder: (context, index) {
-                      final song = _trendingSongs[index];
+                      final song = _globalSongs[index];
                       return GestureDetector(
                         onTap: () => _playSong(song["title"]),
                         child: Container(
@@ -308,7 +316,7 @@ class _LeafPageState extends State<LeafPage> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(song["title"], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                              Text(song["title"], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
                               const SizedBox(height: 4),
                               Text(song["artist"], style: const TextStyle(fontSize: 15, color: Colors.white70)),
                               const SizedBox(height: 6),
@@ -364,7 +372,7 @@ class _LeafPageState extends State<LeafPage> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_trendingSongs[0]["title"]),
+                            onPressed: () => _playSong(_globalSongs[0]["title"]),
                           ),
                           Container(
                             padding: const EdgeInsets.all(4),
@@ -379,7 +387,7 @@ class _LeafPageState extends State<LeafPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_trendingSongs[1]["title"]),
+                            onPressed: () => _playSong(_globalSongs[1]["title"]),
                           ),
                         ],
                       ),
@@ -458,7 +466,7 @@ class _BloodPageState extends State<BloodPage> {
                       children: [
                         Text("DARK VAULT", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                         SizedBox(height: 6),
-                        Text("Trending Offline Beats", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        Text("Trending World Beats", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                       ],
                     ),
                   );
