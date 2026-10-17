@@ -64,7 +64,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE (SPOTIFY STYLE SEARCH & BANNER) ----------------
+// ---------------- LEAF PAGE (INSTANT SEARCH) ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -172,7 +172,6 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar (Spotify / YouTube style)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
@@ -199,7 +198,6 @@ class _LeafPageState extends State<LeafPage> {
                 ),
               ),
 
-              // If searching, show instant results
               if (_searchQuery.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
@@ -234,9 +232,8 @@ class _LeafPageState extends State<LeafPage> {
                             onTap: () => _playSong(song["title"]),
                           );
                         },
-                      ],
+                      ),
               ] else ...[
-                // Trending Banners
                 SizedBox(
                   height: 210,
                   child: PageView.builder(
