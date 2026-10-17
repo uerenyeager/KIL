@@ -66,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE (GLOBAL INSTANT HYBRID SEARCH) ----------------
+// ---------------- LEAF PAGE (INSTANT SEARCH) ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -121,10 +121,12 @@ class _LeafPageState extends State<LeafPage> {
       _isLoading = true;
     });
 
-    final localMatches = _globalSongs.where((s) => 
-      s['title'].toString().toLowerCase().contains(query.toLowerCase()) || 
-      s['artist'].toString().toLowerCase().contains(query.toLowerCase())
-    ).toList();
+    final localMatches = _globalSongs.where((s) {
+      final t = s['title'].toString().toLowerCase();
+      final a = s['artist'].toString().toLowerCase();
+      final q = query.toLowerCase();
+      return t.contains(q) || a.contains(q);
+    }).toList();
 
     try {
       final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=30');
@@ -133,7 +135,6 @@ class _LeafPageState extends State<LeafPage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final apiResults = data['results'] ?? [];
-        
         setState(() {
           _searchResults = [...localMatches, ...apiResults];
           _isLoading = false;
@@ -241,7 +242,7 @@ class _LeafPageState extends State<LeafPage> {
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     decoration: const InputDecoration(
                       icon: Icon(Icons.search, color: Colors.redAccent),
-                      hintText: "Search any world song instantly...",
+                      hintText: "Search any song...",
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                     ),
@@ -273,14 +274,13 @@ class _LeafPageState extends State<LeafPage> {
                           final title = song['trackName'] ?? song['title'] ?? 'Unknown Track';
                           final artist = song['artistName'] ?? song['artist'] ?? 'Unknown Artist';
                           final artwork = song['artworkUrl100'];
-                          final color = song['color'] as Color? ?? Colors.red.shade900;
 
                           return ListTile(
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: artwork != null 
                                   ? Image.network(artwork, width: 44, height: 44, fit: BoxFit.cover)
-                                  : Container(width: 44, height: 44, color: color, child: const Icon(Icons.music_note, color: Colors.white)),
+                                  : Container(width: 44, height: 44, color: Colors.red.shade900, child: const Icon(Icons.music_note, color: Colors.white)),
                             ),
                             title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
                             subtitle: Text(artist, style: const TextStyle(color: Colors.grey, fontSize: 13)),
@@ -288,7 +288,7 @@ class _LeafPageState extends State<LeafPage> {
                             onTap: () => _playSong(title),
                           );
                         },
-                      ],
+                      ),
               ] else ...[
                 SizedBox(
                   height: 210,
