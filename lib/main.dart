@@ -64,7 +64,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE ----------------
+// ---------------- LEAF PAGE WITH WORKING SEARCH ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -80,26 +80,23 @@ class _LeafPageState extends State<LeafPage> {
 
   bool _isPlaying = false;
   String _currentPlayingSong = "Demon Hunter";
+  String _searchQuery = "";
 
-  String _typedText = "";
-  final String _fullText = "Feel";
-  int _charIndex = 0;
-  Timer? _typingTimer;
-
-  final List<Map<String, dynamic>> _trendingSongs = [
+  final List<Map<String, dynamic>> _allSongs = [
     {"title": "Starboy", "artist": "The Weeknd", "color": Colors.red.shade900},
     {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
     {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.deepOrange.shade900},
     {"title": "Goth", "artist": "Sidewalks & Skeletons", "color": Colors.blueGrey.shade900},
     {"title": "Rave", "artist": "Dxrk", "color": Colors.purple.shade900},
     {"title": "Nightwork", "artist": "Kavinsky", "color": Colors.indigo.shade900},
+    {"title": "Dark Hours", "artist": "Night Playlist", "color": Colors.brown.shade900},
+    {"title": "Heavy Drops", "artist": "Rain Playlist", "color": Colors.teal.shade900},
   ];
 
   @override
   void initState() {
     super.initState();
     _startBannerAutoSwipe();
-    _startTypingEffect();
   }
 
   void _playSong(String songName) {
@@ -109,7 +106,7 @@ class _LeafPageState extends State<LeafPage> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Now Playing: $songName"),
+        content: Text("Now Playing: $songName 🎶"),
         backgroundColor: Colors.redAccent,
         duration: const Duration(seconds: 1),
       ),
@@ -124,9 +121,9 @@ class _LeafPageState extends State<LeafPage> {
 
   void _startBannerAutoSwipe() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (_bannerController.hasClients) {
+      if (_bannerController.hasClients && _searchQuery.isEmpty) {
         if (_forward) {
-          if (_currentBannerIndex < _trendingSongs.length - 1) {
+          if (_currentBannerIndex < 5) {
             _currentBannerIndex++;
           } else {
             _forward = false;
@@ -149,38 +146,20 @@ class _LeafPageState extends State<LeafPage> {
     });
   }
 
-  void _startTypingEffect() {
-    _typingTimer = Timer.periodic(const Duration(milliseconds: 350), (timer) {
-      if (_charIndex < _fullText.length) {
-        if (mounted) {
-          setState(() {
-            _typedText += _fullText[_charIndex];
-            _charIndex++;
-          });
-        }
-      } else {
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            setState(() {
-              _typedText = "";
-              _charIndex = 0;
-            });
-          }
-        });
-      }
-    });
-  }
-
   @override
   void dispose() {
     _bannerTimer?.cancel();
-    _typingTimer?.cancel();
     _bannerController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final filteredSongs = _allSongs.where((song) {
+      return song["title"]!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+             song["artist"]!.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -188,139 +167,166 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.grey[950],
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.6)),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.search, color: Colors.redAccent, size: 22),
-                      const SizedBox(width: 12),
-                      Text(
-                        _typedText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.1,
+                  child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    decoration: const InputDecoration(
+                      icon: Icon(Icons.search, color: Colors.redAccent),
+                      hintText: "Search song or feel...",
+                      hintStyle: TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ),
+
+              // If searching, show search results list. Otherwise show Banners.
+              if (_searchQuery.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
+                  child: Text("SEARCH RESULTS", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredSongs.length,
+                  itemBuilder: (context, index) {
+                    final song = filteredSongs[index];
+                    return ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(color: song["color"], borderRadius: BorderRadius.circular(8)),
+                        child: const Icon(Icons.music_note, color: Colors.white, size: 20),
+                      ),
+                      title: Text(song["title"], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      subtitle: Text(song["artist"], style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      trailing: const Icon(Icons.play_arrow_rounded, color: Colors.redAccent),
+                      onTap: () => _playSong(song["title"]),
+                    );
+                  },
+                ),
+              ] else ...[
+                // Trending Banners
+                SizedBox(
+                  height: 210,
+                  child: PageView.builder(
+                    controller: _bannerController,
+                    itemCount: 6,
+                    itemBuilder: (context, index) {
+                      final song = _allSongs[index];
+                      return GestureDetector(
+                        onTap: () => _playSong(song["title"]),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: song["color"],
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent.withOpacity(0.2),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(song["title"], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                              const SizedBox(height: 4),
+                              Text(song["artist"], style: const TextStyle(fontSize: 15, color: Colors.white70)),
+                              const SizedBox(height: 6),
+                              const Text("Tap to Play 🎶", style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
                         ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 18.0),
+                  child: Text("NOW PLAYING", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[950],
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(12)),
+                            child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_currentPlayingSong, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
+                                const SizedBox(height: 2),
+                                Text(_isPlaying ? "Playing Offline Audio..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
+                            onPressed: () => _playSong(_allSongs[0]["title"]),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.redAccent,
+                            ),
+                            child: IconButton(
+                              icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: 34),
+                              onPressed: _togglePlayPause,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
+                            onPressed: () => _playSong(_allSongs[1]["title"]),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              SizedBox(
-                height: 210,
-                child: PageView.builder(
-                  controller: _bannerController,
-                  itemCount: _trendingSongs.length,
-                  itemBuilder: (context, index) {
-                    final song = _trendingSongs[index];
-                    return GestureDetector(
-                      onTap: () => _playSong(song["title"]),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: song["color"],
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.redAccent.withOpacity(0.2),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(song["title"], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
-                            const SizedBox(height: 4),
-                            Text(song["artist"], style: const TextStyle(fontSize: 15, color: Colors.white70)),
-                            const SizedBox(height: 6),
-                            const Text("Tap to Play 🎶", style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 25),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 18.0),
-                child: Text("NOW PLAYING", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
-              ),
-
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[950],
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white10),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(12)),
-                          child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(_currentPlayingSong, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
-                              const SizedBox(height: 2),
-                              Text(_isPlaying ? "Playing Offline Audio..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
-                          onPressed: () => _playSong(_trendingSongs[0]["title"]),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.redAccent,
-                          ),
-                          child: IconButton(
-                            icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white, size: 34),
-                            onPressed: _togglePlayPause,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
-                          onPressed: () => _playSong(_trendingSongs[1]["title"]),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              ],
             ],
           ),
         ),
