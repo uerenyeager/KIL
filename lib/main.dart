@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -56,18 +55,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         selectedItemColor: Colors.redAccent,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.eco),
-            label: 'Leaf',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.water_drop),
-            label: 'Blood',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view),
-            label: 'EU',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.eco), label: 'Leaf'),
+          BottomNavigationBarItem(icon: Icon(Icons.water_drop), label: 'Blood'),
+          BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'EU'),
         ],
       ),
     );
@@ -85,21 +75,22 @@ class LeafPage extends StatefulWidget {
 class _LeafPageState extends State<LeafPage> {
   final PageController _bannerController = PageController();
   int _currentBannerIndex = 0;
+  bool _forward = true;
   Timer? _bannerTimer;
 
-  // Typing Effect Variables
+  // Typing Effect Variables for "Feel"
   String _typedText = "";
   final String _fullText = "Feel";
   int _charIndex = 0;
   Timer? _typingTimer;
 
-  final List<Map<String, String>> _trendingSongs = [
-    {"title": "Starboy", "artist": "The Weeknd", "color": "0xFF800020"},
-    {"title": "Metamorphosis", "artist": "INTERWORLD", "color": "0xFF2C001E"},
-    {"title": "KIL Theme", "artist": "Eren Yeager", "color": "0xFF4A0000"},
-    {"title": "Goth", "artist": "Sidewalks and Skeletons", "color": "0xFF1A1A1A"},
-    {"title": "Rave", "artist": "Dxrk", "color": "0xFF330033"},
-    {"title": "Nightwork", "artist": "Kavinsky", "color": "0xFF002233"},
+  final List<Map<String, dynamic>> _trendingSongs = [
+    {"title": "Starboy", "artist": "The Weeknd", "color": Colors.red.shade900},
+    {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
+    {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.deepOrange.shade900},
+    {"title": "Goth", "artist": "Sidewalks & Skeletons", "color": Colors.blueGrey.shade900},
+    {"title": "Rave", "artist": "Dxrk", "color": Colors.purple.shade900},
+    {"title": "Nightwork", "artist": "Kavinsky", "color": Colors.indigo.shade900},
   ];
 
   @override
@@ -112,10 +103,24 @@ class _LeafPageState extends State<LeafPage> {
   void _startBannerAutoSwipe() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (_bannerController.hasClients) {
-        _currentBannerIndex = (_currentBannerIndex + 1) % _trendingSongs.length;
+        if (_forward) {
+          if (_currentBannerIndex < _trendingSongs.length - 1) {
+            _currentBannerIndex++;
+          } else {
+            _forward = false;
+            _currentBannerIndex--;
+          }
+        } else {
+          if (_currentBannerIndex > 0) {
+            _currentBannerIndex--;
+          } else {
+            _forward = true;
+            _currentBannerIndex++;
+          }
+        }
         _bannerController.animateToPage(
           _currentBannerIndex,
-          duration: const Duration(milliseconds: 600),
+          duration: const Duration(milliseconds: 700),
           curve: Curves.easeInOut,
         );
       }
@@ -123,14 +128,16 @@ class _LeafPageState extends State<LeafPage> {
   }
 
   void _startTypingEffect() {
-    _typingTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+    _typingTimer = Timer.periodic(const Duration(milliseconds: 350), (timer) {
       if (_charIndex < _fullText.length) {
-        setState(() {
-          _typedText += _fullText[_charIndex];
-          _charIndex++;
-        });
+        if (mounted) {
+          setState(() {
+            _typedText += _fullText[_charIndex];
+            _charIndex++;
+          });
+        }
       } else {
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
             setState(() {
               _typedText = "";
@@ -159,26 +166,27 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar with Typing "Feel"
+              // Search Bar with Smooth "Feel" Writing Only
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[900],
+                    color: Colors.grey[950],
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.search, color: Colors.redAccent, size: 24),
+                      const Icon(Icons.search, color: Colors.redAccent, size: 22),
                       const SizedBox(width: 12),
                       Text(
-                        _typedText.isEmpty ? "Search " : "Search '$_typedText'...",
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                        _typedText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.1,
                         ),
                       ),
                     ],
@@ -186,27 +194,26 @@ class _LeafPageState extends State<LeafPage> {
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              // Auto Swiping Trending Songs Banner
+              // Auto-Swiping Banner (Lowered Position, Perfect Dimensions)
               SizedBox(
-                height: 220,
+                height: 210,
                 child: PageView.builder(
                   controller: _bannerController,
                   itemCount: _trendingSongs.length,
                   itemBuilder: (context, index) {
                     final song = _trendingSongs[index];
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Color(int.parse(song["color"]!)),
-                        borderRadius: BorderRadius.circular(20),
+                        color: song["color"],
+                        borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.redAccent.withOpacity(0.2),
                             blurRadius: 10,
-                            spreadRadius: 2,
                           ),
                         ],
                       ),
@@ -214,26 +221,9 @@ class _LeafPageState extends State<LeafPage> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              "WORLD TRENDING",
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            song["title"]!,
-                            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                          Text(
-                            song["artist"]!,
-                            style: const TextStyle(fontSize: 16, color: Colors.white70),
-                          ),
+                          Text(song["title"], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white)),
+                          const SizedBox(height: 4),
+                          Text(song["artist"], style: const TextStyle(fontSize: 15, color: Colors.white70)),
                         ],
                       ),
                     );
@@ -241,22 +231,19 @@ class _LeafPageState extends State<LeafPage> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  "NOW PLAYING",
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 18.0),
+                child: Text("NOW PLAYING", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
               ),
 
-              // Player Box with Interesting Controls
+              // Player Box with Interesting Change Music Icons
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey[950],
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: Colors.white10),
                 ),
                 child: Column(
@@ -264,20 +251,18 @@ class _LeafPageState extends State<LeafPage> {
                     Row(
                       children: [
                         Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.music_note, color: Colors.white),
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(12)),
+                          child: const Icon(Icons.music_note_rounded, color: Colors.white, size: 28),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("Demon Hunter", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              Text("Demon Hunter", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
+                              SizedBox(height: 2),
                               Text("Offline Stream", style: TextStyle(color: Colors.grey, fontSize: 12)),
                             ],
                           ),
@@ -285,30 +270,27 @@ class _LeafPageState extends State<LeafPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Interesting Modern Controls (No boring back/next icons)
+                    // Interesting Music Control Icons (Previous, Play/Pause, Next)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.replay_10_rounded, color: Colors.white, size: 30),
+                          icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
                           onPressed: () {},
                         ),
                         Container(
+                          padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.redAccent,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 36),
+                            icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 34),
                             onPressed: () {},
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.forward_10_rounded, color: Colors.white, size: 30),
-                          onPressed: () {},
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.favorite_border, color: Colors.redAccent, size: 26),
+                          icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
                           onPressed: () {},
                         ),
                       ],
@@ -335,13 +317,13 @@ class BloodPage extends StatefulWidget {
 class _BloodPageState extends State<BloodPage> {
   final PageController _bloodBannerController = PageController();
 
-  final List<String> playlists = [
-    "1. NIGHT",
-    "2. RAIN",
-    "3. ELFER",
-    "4. PAIN",
-    "5. GREL",
-    "6. DEATH"
+  final List<Map<String, String>> playlistData = const [
+    {"name": "1. NIGHT", "topSong": "Most Played: Dark Hours"},
+    {"name": "2. RAIN", "topSong": "Most Played: Heavy Drops"},
+    {"name": "3. ELFER", "topSong": "Most Played: Ancient Echo"},
+    {"name": "4. PAIN", "topSong": "Most Played: Silent Tears"},
+    {"name": "5. GREL", "topSong": "Most Played: Shadow Realm"},
+    {"name": "6. DEATH", "topSong": "Most Played: Final Horizon"},
   ];
 
   @override
@@ -354,7 +336,7 @@ class _BloodPageState extends State<BloodPage> {
         title: const Text(
           "Blood",
           style: TextStyle(
-            color: Colors.white, // White Color as requested
+            color: Colors.white,
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
@@ -363,32 +345,32 @@ class _BloodPageState extends State<BloodPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Banner on Blood Page
+            // Smaller Banner on Blood Page (Leaf Style)
             SizedBox(
-              height: 160,
+              height: 150,
               child: PageView.builder(
                 controller: _bloodBannerController,
                 itemCount: 3,
                 itemBuilder: (context, index) {
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.red.shade900, Colors.black],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
                     ),
                     child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("DARK VAULT", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        Text("DARK VAULT", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
                         SizedBox(height: 6),
-                        Text("Unmatched Dark Vibes", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                        Text("Trending Offline Beats", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                       ],
                     ),
                   );
@@ -397,33 +379,45 @@ class _BloodPageState extends State<BloodPage> {
             ),
             const SizedBox(height: 10),
 
-            // 6 Dark Playlists with Increased Text Size
+            // 6 Dark Playlists in Original Box Format
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: playlists.length,
+              itemCount: playlistData.length,
               itemBuilder: (context, index) {
+                final item = playlistData[index];
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                   decoration: BoxDecoration(
                     color: Colors.grey[950],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    leading: const Icon(Icons.queue_music, color: Colors.redAccent, size: 28),
-                    title: Text(
-                      playlists[index],
-                      style: const TextStyle(
-                        fontSize: 22, // Increased Text Size
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item["name"]!,
+                            style: const TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item["topSong"]!,
+                            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                          ),
+                        ],
                       ),
-                    ),
-                    trailing: const Icon(Icons.play_circle_fill, color: Colors.redAccent, size: 30),
-                    onTap: () {},
+                      const Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent, size: 32),
+                    ],
                   ),
                 );
               },
@@ -435,7 +429,7 @@ class _BloodPageState extends State<BloodPage> {
   }
 }
 
-// ---------------- EU PAGE (PROFILE & SETTINGS) ----------------
+// ---------------- EU PAGE (PROFILE & Z SETTINGS) ----------------
 class EuPage extends StatefulWidget {
   const EuPage({super.key});
 
@@ -446,7 +440,7 @@ class EuPage extends StatefulWidget {
 class _EuPageState extends State<EuPage> {
   String userName = "Eren Yeager";
 
-  void _showSettingsModal() {
+  void _showZSettings() {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[950],
@@ -455,36 +449,33 @@ class _EuPageState extends State<EuPage> {
       ),
       builder: (context) {
         return Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[700], borderRadius: BorderRadius.circular(10))),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               const Row(
                 children: [
-                  Icon(Icons.settings, color: Colors.redAccent),
+                  Text("( Z )", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent)),
                   SizedBox(width: 12),
                   Text("Settings", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 ],
               ),
               const Divider(color: Colors.white24, height: 30),
-              ListTile(
-                leading: const Icon(Icons.palette, color: Colors.white),
-                title: const Text("Theme Settings"),
-                trailing: const Text("Dark OLED", style: TextStyle(color: Colors.grey)),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: const Icon(Icons.download, color: Colors.white),
-                title: const Text("SOUL Download Hub"),
-                onTap: () {},
-              ),
-              ListTile(
-                leading: const Icon(Icons.info_outline, color: Colors.white),
-                title: const Text("About KIL App"),
-                subtitle: const Text("Version 2.0 - Standalone"),
-                onTap: () {},
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                ),
+                child: const Text(
+                  "SOUL",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
+                ),
               ),
             ],
           ),
@@ -499,20 +490,16 @@ class _EuPageState extends State<EuPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.grey[900],
-        title: const Text("Edit Name"),
+        title: const Text("Edit Profile Name", style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            hintText: "Enter your name",
             enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.redAccent)),
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
@@ -533,67 +520,65 @@ class _EuPageState extends State<EuPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: const Text("EU", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text("EU", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
         actions: [
-          // Unique Instagram Style Settings Icon
+          // Z Settings Icon
           IconButton(
-            icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 30),
-            onPressed: _showSettingsModal,
+            icon: const Text("( Z )", style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 18)),
+            onPressed: _showZSettings,
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(18.0),
         child: Column(
           children: [
-            // Instagram Style Profile Section
+            // Profile Section
             Row(
               children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 42,
-                      backgroundColor: Colors.redAccent,
-                      child: const CircleAvatar(
-                        radius: 39,
-                        backgroundColor: Colors.black,
-                        child: Icon(Icons.person, size: 45, color: Colors.white),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.add_a_photo, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Profile Photo Selected")),
+                    );
+                  },
+                  child: Stack(
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            userName,
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
-                            onPressed: _editName,
-                          ),
-                        ],
+                      const CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Colors.redAccent,
+                        child: CircleAvatar(
+                          radius: 37,
+                          backgroundColor: Colors.black,
+                          child: Icon(Icons.person, size: 42, color: Colors.white),
+                        ),
                       ),
-                      const Text(
-                        "KIL Premium User",
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.add_a_photo, size: 14, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Text(
+                        userName,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
+                        onPressed: _editName,
                       ),
                     ],
                   ),
@@ -601,25 +586,22 @@ class _EuPageState extends State<EuPage> {
               ],
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 35),
 
-            // SOUL Offline Download Hub
+            // SOUL Small Rectangular Box (No Download Icon)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
                 color: Colors.grey[950],
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.redAccent, width: 1.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.6)),
               ),
-              child: const Column(
-                children: [
-                  Icon(Icons.downloading, color: Colors.redAccent, size: 40),
-                  SizedBox(height: 8),
-                  Text("SOUL HUB", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-                  SizedBox(height: 4),
-                  Text("Offline Download Engine Active", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
+              child: const Center(
+                child: Text(
+                  "SOUL",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 3),
+                ),
               ),
             ),
           ],
