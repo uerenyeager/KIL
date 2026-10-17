@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const KilApp());
@@ -64,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE (INSTANT SEARCH) ----------------
+// ---------------- LEAF PAGE (REAL ONLINE SEARCH API) ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -77,21 +79,20 @@ class _LeafPageState extends State<LeafPage> {
   int _currentBannerIndex = 0;
   bool _forward = true;
   Timer? _bannerTimer;
+  Timer? _debounce;
 
   bool _isPlaying = false;
   String _currentPlayingSong = "Starboy";
   String _searchQuery = "";
+  bool _isLoading = false;
+  List<dynamic> _searchResults = [];
 
-  final List<Map<String, dynamic>> _allSongs = [
+  final List<Map<String, dynamic>> _trendingSongs = [
     {"title": "Starboy", "artist": "The Weeknd", "color": Colors.red.shade900},
     {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
     {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.deepOrange.shade900},
     {"title": "Goth", "artist": "Sidewalks & Skeletons", "color": Colors.blueGrey.shade900},
     {"title": "Rave", "artist": "Dxrk", "color": Colors.purple.shade900},
-    {"title": "Nightwork", "artist": "Kavinsky", "color": Colors.indigo.shade900},
-    {"title": "Dark Hours", "artist": "Night Playlist", "color": Colors.brown.shade900},
-    {"title": "Heavy Drops", "artist": "Rain Playlist", "color": Colors.teal.shade900},
-    {"title": "Phonk Drift", "artist": "Kordhell", "color": Colors.deepPurple.shade900},
     {"title": "Blinding Lights", "artist": "The Weeknd", "color": Colors.redAccent.shade700},
   ];
 
@@ -99,6 +100,52 @@ class _LeafPageState extends State<LeafPage> {
   void initState() {
     super.initState();
     _startBannerAutoSwipe();
+  }
+
+  void _searchSongs(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=25');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _searchResults = data['results'] ?? [];
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+    });
+
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _searchSongs(query);
+    });
   }
 
   void _playSong(String songName) {
@@ -151,20 +198,13 @@ class _LeafPageState extends State<LeafPage> {
   @override
   void dispose() {
     _bannerTimer?.cancel();
+    _debounce?.cancel();
     _bannerController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final query = _searchQuery.toLowerCase().trim();
-    final filteredSongs = query.isEmpty 
-        ? _allSongs 
-        : _allSongs.where((song) {
-            return song["title"]!.toLowerCase().contains(query) ||
-                   song["artist"]!.toLowerCase().contains(query);
-          }).toList();
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -172,6 +212,7 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
@@ -182,15 +223,11 @@ class _LeafPageState extends State<LeafPage> {
                     border: Border.all(color: Colors.redAccent.withOpacity(0.6)),
                   ),
                   child: TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
+                    onChanged: _onSearchChanged,
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     decoration: const InputDecoration(
                       icon: Icon(Icons.search, color: Colors.redAccent),
-                      hintText: "Search songs, artists, feel...",
+                      hintText: "Search any song globally...",
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                     ),
@@ -198,49 +235,60 @@ class _LeafPageState extends State<LeafPage> {
                 ),
               ),
 
+              // If searching, show online search results
               if (_searchQuery.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
                   child: Text(
-                    "SEARCH RESULTS (${filteredSongs.length})", 
+                    _isLoading ? "SEARCHING ONLINE..." : "ONLINE RESULTS (${_searchResults.length})", 
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)
                   ),
                 ),
-                filteredSongs.isEmpty
+                _isLoading
                     ? const Padding(
                         padding: EdgeInsets.all(40.0),
-                        child: Center(
-                          child: Text("No songs found!", style: TextStyle(color: Colors.grey, fontSize: 16)),
-                        ),
+                        child: Center(child: CircularProgressIndicator(color: Colors.redAccent)),
                       )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filteredSongs.length,
-                        itemBuilder: (context, index) {
-                          final song = filteredSongs[index];
-                          return ListTile(
-                            leading: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(color: song["color"], borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.music_note, color: Colors.white, size: 22),
+                    : _searchResults.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(40.0),
+                            child: Center(
+                              child: Text("No songs found online!", style: TextStyle(color: Colors.grey, fontSize: 16)),
                             ),
-                            title: Text(song["title"], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            subtitle: Text(song["artist"], style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                            trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent, size: 30),
-                            onTap: () => _playSong(song["title"]),
-                          );
-                        },
-                      ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _searchResults.length,
+                            itemBuilder: (context, index) {
+                              final song = _searchResults[index];
+                              final title = song['trackName'] ?? 'Unknown Track';
+                              final artist = song['artistName'] ?? 'Unknown Artist';
+                              final artwork = song['artworkUrl100'];
+
+                              return ListTile(
+                                leading: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: artwork != null 
+                                      ? Image.network(artwork, width: 44, height: 44, fit: BoxFit.cover)
+                                      : Container(width: 44, height: 44, color: Colors.red.shade900, child: const Icon(Icons.music_note, color: Colors.white)),
+                                ),
+                                title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                subtitle: Text(artist, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent, size: 30),
+                                onTap: () => _playSong(title),
+                              );
+                            },
+                          ),
               ] else ...[
+                // Trending Banners
                 SizedBox(
                   height: 210,
                   child: PageView.builder(
                     controller: _bannerController,
-                    itemCount: 6,
+                    itemCount: _trendingSongs.length,
                     itemBuilder: (context, index) {
-                      final song = _allSongs[index];
+                      final song = _trendingSongs[index];
                       return GestureDetector(
                         onTap: () => _playSong(song["title"]),
                         child: Container(
@@ -316,7 +364,7 @@ class _LeafPageState extends State<LeafPage> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_allSongs[0]["title"]),
+                            onPressed: () => _playSong(_trendingSongs[0]["title"]),
                           ),
                           Container(
                             padding: const EdgeInsets.all(4),
@@ -331,7 +379,7 @@ class _LeafPageState extends State<LeafPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_allSongs[1]["title"]),
+                            onPressed: () => _playSong(_trendingSongs[1]["title"]),
                           ),
                         ],
                       ),
