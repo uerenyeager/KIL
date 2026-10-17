@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const KilApp());
@@ -79,85 +78,48 @@ class _LeafPageState extends State<LeafPage> {
   bool _forward = true;
   Timer? _bannerTimer;
 
-  // Audio Player
-  late final AudioPlayer _audioPlayer;
   bool _isPlaying = false;
   String _currentPlayingSong = "Demon Hunter";
 
-  // Typing Effect for "Feel"
   String _typedText = "";
   final String _fullText = "Feel";
   int _charIndex = 0;
   Timer? _typingTimer;
 
   final List<Map<String, dynamic>> _trendingSongs = [
-    {
-      "title": "Starboy",
-      "artist": "The Weeknd",
-      "color": Colors.red.shade900,
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-    },
-    {
-      "title": "Metamorphosis",
-      "artist": "INTERWORLD",
-      "color": Colors.grey.shade900,
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
-    },
-    {
-      "title": "KIL Theme",
-      "artist": "Eren Yeager",
-      "color": Colors.deepOrange.shade900,
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
-    },
-    {
-      "title": "Goth",
-      "artist": "Sidewalks & Skeletons",
-      "color": Colors.blueGrey.shade900,
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
-    },
-    {
-      "title": "Rave",
-      "artist": "Dxrk",
-      "color": Colors.purple.shade900,
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"
-    },
-    {
-      "title": "Nightwork",
-      "artist": "Kavinsky",
-      "color": Colors.indigo.shade900,
-      "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
-    },
+    {"title": "Starboy", "artist": "The Weeknd", "color": Colors.red.shade900},
+    {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
+    {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.deepOrange.shade900},
+    {"title": "Goth", "artist": "Sidewalks & Skeletons", "color": Colors.blueGrey.shade900},
+    {"title": "Rave", "artist": "Dxrk", "color": Colors.purple.shade900},
+    {"title": "Nightwork", "artist": "Kavinsky", "color": Colors.indigo.shade900},
   ];
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer = AudioPlayer();
     _startBannerAutoSwipe();
     _startTypingEffect();
   }
 
-  Future<void> _playSong(String url, String songName) async {
-    try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(UrlSource(url));
-      setState(() {
-        _isPlaying = true;
-        _currentPlayingSong = songName;
-      });
-    } catch (e) {
-      debugPrint("Audio Error: $e");
-    }
+  void _playSong(String songName) {
+    setState(() {
+      _isPlaying = true;
+      _currentPlayingSong = songName;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Now Playing: $songName"),
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 1),
+      ),
+    );
   }
 
-  Future<void> _togglePlayPause() async {
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-      setState(() => _isPlaying = false);
-    } else {
-      await _audioPlayer.resume();
-      setState(() => _isPlaying = true);
-    }
+  void _togglePlayPause() {
+    setState(() {
+      _isPlaying = !_isPlaying;
+    });
   }
 
   void _startBannerAutoSwipe() {
@@ -214,7 +176,6 @@ class _LeafPageState extends State<LeafPage> {
     _bannerTimer?.cancel();
     _typingTimer?.cancel();
     _bannerController.dispose();
-    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -227,7 +188,6 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar with Smooth "Feel" Writing Only
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
@@ -257,7 +217,6 @@ class _LeafPageState extends State<LeafPage> {
 
               const SizedBox(height: 12),
 
-              // Auto-Swiping Banner (Clickable to Play Song)
               SizedBox(
                 height: 210,
                 child: PageView.builder(
@@ -266,7 +225,7 @@ class _LeafPageState extends State<LeafPage> {
                   itemBuilder: (context, index) {
                     final song = _trendingSongs[index];
                     return GestureDetector(
-                      onTap: () => _playSong(song["url"], song["title"]),
+                      onTap: () => _playSong(song["title"]),
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         padding: const EdgeInsets.all(20),
@@ -303,7 +262,6 @@ class _LeafPageState extends State<LeafPage> {
                 child: Text("NOW PLAYING", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
               ),
 
-              // Player Box with Working Audio Controls
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
@@ -329,20 +287,19 @@ class _LeafPageState extends State<LeafPage> {
                             children: [
                               Text(_currentPlayingSong, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
                               const SizedBox(height: 2),
-                              Text(_isPlaying ? "Playing Live Stream..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                              Text(_isPlaying ? "Playing Offline Audio..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Working Control Icons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
-                          onPressed: () => _playSong(_trendingSongs[0]["url"], _trendingSongs[0]["title"]),
+                          onPressed: () => _playSong(_trendingSongs[0]["title"]),
                         ),
                         Container(
                           padding: const EdgeInsets.all(4),
@@ -357,7 +314,7 @@ class _LeafPageState extends State<LeafPage> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
-                          onPressed: () => _playSong(_trendingSongs[1]["url"], _trendingSongs[1]["title"]),
+                          onPressed: () => _playSong(_trendingSongs[1]["title"]),
                         ),
                       ],
                     ),
@@ -382,22 +339,15 @@ class BloodPage extends StatefulWidget {
 
 class _BloodPageState extends State<BloodPage> {
   final PageController _bloodBannerController = PageController();
-  final AudioPlayer _bloodPlayer = AudioPlayer();
 
   final List<Map<String, String>> playlistData = const [
-    {"name": "1. NIGHT", "topSong": "Most Played: Dark Hours", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"},
-    {"name": "2. RAIN", "topSong": "Most Played: Heavy Drops", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"},
-    {"name": "3. ELFER", "topSong": "Most Played: Ancient Echo", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"},
-    {"name": "4. PAIN", "topSong": "Most Played: Silent Tears", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"},
-    {"name": "5. GREL", "topSong": "Most Played: Shadow Realm", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"},
-    {"name": "6. DEATH", "topSong": "Most Played: Final Horizon", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"},
+    {"name": "1. NIGHT", "topSong": "Most Played: Dark Hours"},
+    {"name": "2. RAIN", "topSong": "Most Played: Heavy Drops"},
+    {"name": "3. ELFER", "topSong": "Most Played: Ancient Echo"},
+    {"name": "4. PAIN", "topSong": "Most Played: Silent Tears"},
+    {"name": "5. GREL", "topSong": "Most Played: Shadow Realm"},
+    {"name": "6. DEATH", "topSong": "Most Played: Final Horizon"},
   ];
-
-  @override
-  void dispose() {
-    _bloodPlayer.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -418,7 +368,6 @@ class _BloodPageState extends State<BloodPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Smaller Banner on Blood Page
             SizedBox(
               height: 150,
               child: PageView.builder(
@@ -452,7 +401,6 @@ class _BloodPageState extends State<BloodPage> {
             ),
             const SizedBox(height: 10),
 
-            // 6 Dark Playlists (Clickable to Play Audio)
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -460,11 +408,9 @@ class _BloodPageState extends State<BloodPage> {
               itemBuilder: (context, index) {
                 final item = playlistData[index];
                 return GestureDetector(
-                  onTap: () async {
-                    await _bloodPlayer.stop();
-                    await _bloodPlayer.play(UrlSource(item["url"]!));
+                  onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Playing ${item["name"]}..."), duration: const Duration(seconds: 1)),
+                      SnackBar(content: Text("Playing ${item["name"]}..."), backgroundColor: Colors.redAccent, duration: const Duration(seconds: 1)),
                     );
                   },
                   child: Container(
@@ -669,7 +615,7 @@ class _EuPageState extends State<EuPage> {
             const SizedBox(height: 35),
 
             Container(
-              width: double.ynfinity? width: double.infinity,
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 18),
               decoration: BoxDecoration(
                 color: Colors.grey[950],
