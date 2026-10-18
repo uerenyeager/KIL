@@ -66,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE (INSTANT SEARCH) ----------------
+// ---------------- LEAF PAGE (LIVE GLOBAL STREAMING SEARCH) ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -87,19 +87,13 @@ class _LeafPageState extends State<LeafPage> {
   bool _isLoading = false;
   List<dynamic> _searchResults = [];
 
-  final List<Map<String, dynamic>> _globalSongs = [
+  final List<Map<String, dynamic>> _trendingBannerSongs = [
     {"title": "Starboy", "artist": "The Weeknd", "color": Colors.red.shade900},
-    {"title": "Tu Pyaar Hai Kisi Aur Ka", "artist": "Kumar Sanu", "color": Colors.deepOrange.shade900},
-    {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
-    {"title": "KIL Theme", "artist": "Eren Yeager", "color": Colors.indigo.shade900},
-    {"title": "Goth", "artist": "Sidewalks & Skeletons", "color": Colors.blueGrey.shade900},
-    {"title": "Rave", "artist": "Dxrk", "color": Colors.purple.shade900},
     {"title": "Blinding Lights", "artist": "The Weeknd", "color": Colors.redAccent.shade700},
-    {"title": "Nightwork", "artist": "Kavinsky", "color": Colors.blue.shade900},
-    {"title": "Phonk Drift", "artist": "Kordhell", "color": Colors.deepPurple.shade900},
-    {"title": "Believer", "artist": "Imagine Dragons", "color": Colors.orange.shade900},
-    {"title": "Fade", "artist": "Alan Walker", "color": Colors.teal.shade900},
-    {"title": "Mockingbird", "artist": "Eminem", "color": Colors.brown.shade900},
+    {"title": "Anti-Hero", "artist": "Taylor Swift", "color": Colors.purple.shade900},
+    {"title": "FEIN", "artist": "Travis Scott", "color": Colors.deepOrange.shade900},
+    {"title": "Kesariya", "artist": "Arijit Singh", "color": Colors.amber.shade900},
+    {"title": "Metamorphosis", "artist": "INTERWORLD", "color": Colors.grey.shade900},
   ];
 
   @override
@@ -108,7 +102,7 @@ class _LeafPageState extends State<LeafPage> {
     _startBannerAutoSwipe();
   }
 
-  void _searchMusic(String query) async {
+  void _searchLiveMusic(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
         _searchResults = [];
@@ -121,33 +115,28 @@ class _LeafPageState extends State<LeafPage> {
       _isLoading = true;
     });
 
-    final localMatches = _globalSongs.where((s) {
-      final t = s['title'].toString().toLowerCase();
-      final a = s['artist'].toString().toLowerCase();
-      final q = query.toLowerCase();
-      return t.contains(q) || a.contains(q);
-    }).toList();
-
     try {
-      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=30');
-      final response = await http.get(url);
+      // Fetching live global music tracks from public iTunes & streaming index
+      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=50');
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final apiResults = data['results'] ?? [];
+        final List apiResults = data['results'] ?? [];
+        
         setState(() {
-          _searchResults = [...localMatches, ...apiResults];
+          _searchResults = apiResults;
           _isLoading = false;
         });
       } else {
         setState(() {
-          _searchResults = localMatches;
+          _searchResults = [];
           _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _searchResults = localMatches;
+        _searchResults = [];
         _isLoading = false;
       });
     }
@@ -159,8 +148,8 @@ class _LeafPageState extends State<LeafPage> {
     });
 
     if (_debounce?.isActive ?? false) _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 200), () {
-      _searchMusic(query);
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      _searchLiveMusic(query);
     });
   }
 
@@ -171,7 +160,7 @@ class _LeafPageState extends State<LeafPage> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Now Playing: $songName 🎶"),
+        content: Text("Streaming Live: $songName 🎶"),
         backgroundColor: Colors.redAccent,
         duration: const Duration(seconds: 1),
       ),
@@ -228,6 +217,7 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
@@ -242,7 +232,7 @@ class _LeafPageState extends State<LeafPage> {
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     decoration: const InputDecoration(
                       icon: Icon(Icons.search, color: Colors.redAccent),
-                      hintText: "Search any song...",
+                      hintText: "Search T, A, Z, M or any world song...",
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                     ),
@@ -254,7 +244,7 @@ class _LeafPageState extends State<LeafPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
                   child: Text(
-                    _isLoading ? "SEARCHING..." : "SEARCH RESULTS (${_searchResults.length})", 
+                    _isLoading ? "SEARCHING LIVE..." : "GLOBAL RESULTS (${_searchResults.length})", 
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)
                   ),
                 ),
@@ -262,7 +252,7 @@ class _LeafPageState extends State<LeafPage> {
                     ? const Padding(
                         padding: EdgeInsets.all(40.0),
                         child: Center(
-                          child: Text("No songs found!", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          child: Text("No live songs found!", style: TextStyle(color: Colors.grey, fontSize: 16)),
                         ),
                       )
                     : ListView.builder(
@@ -271,8 +261,8 @@ class _LeafPageState extends State<LeafPage> {
                         itemCount: _searchResults.length,
                         itemBuilder: (context, index) {
                           final song = _searchResults[index];
-                          final title = song['trackName'] ?? song['title'] ?? 'Unknown Track';
-                          final artist = song['artistName'] ?? song['artist'] ?? 'Unknown Artist';
+                          final title = song['trackName'] ?? 'Unknown Track';
+                          final artist = song['artistName'] ?? 'Unknown Artist';
                           final artwork = song['artworkUrl100'];
 
                           return ListTile(
@@ -290,13 +280,14 @@ class _LeafPageState extends State<LeafPage> {
                         },
                       ),
               ] else ...[
+                // Trending Banner
                 SizedBox(
                   height: 210,
                   child: PageView.builder(
                     controller: _bannerController,
-                    itemCount: 6,
+                    itemCount: _trendingBannerSongs.length,
                     itemBuilder: (context, index) {
-                      final song = _globalSongs[index];
+                      final song = _trendingBannerSongs[index];
                       return GestureDetector(
                         onTap: () => _playSong(song["title"]),
                         child: Container(
@@ -320,7 +311,7 @@ class _LeafPageState extends State<LeafPage> {
                               const SizedBox(height: 4),
                               Text(song["artist"], style: const TextStyle(fontSize: 15, color: Colors.white70)),
                               const SizedBox(height: 6),
-                              const Text("Tap to Play 🎶", style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                              const Text("Tap to Stream 🎶", style: TextStyle(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),
@@ -335,6 +326,7 @@ class _LeafPageState extends State<LeafPage> {
                   child: Text("NOW PLAYING", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
 
+                // Player Widget
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -360,7 +352,7 @@ class _LeafPageState extends State<LeafPage> {
                               children: [
                                 Text(_currentPlayingSong, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
                                 const SizedBox(height: 2),
-                                Text(_isPlaying ? "Playing Stream..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                Text(_isPlaying ? "Live Audio Streaming..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -372,7 +364,7 @@ class _LeafPageState extends State<LeafPage> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_globalSongs[0]["title"]),
+                            onPressed: () => _playSong(_trendingBannerSongs[0]["title"]),
                           ),
                           Container(
                             padding: const EdgeInsets.all(4),
@@ -387,7 +379,7 @@ class _LeafPageState extends State<LeafPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_globalSongs[1]["title"]),
+                            onPressed: () => _playSong(_trendingBannerSongs[1]["title"]),
                           ),
                         ],
                       ),
