@@ -66,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 }
 
-// ---------------- LEAF PAGE (LIVE GLOBAL STREAMING SEARCH) ----------------
+// ---------------- LEAF PAGE (GLOBAL 30-SEC INSTANT PREVIEW SEARCH) ----------------
 class LeafPage extends StatefulWidget {
   const LeafPage({super.key});
 
@@ -83,6 +83,7 @@ class _LeafPageState extends State<LeafPage> {
 
   bool _isPlaying = false;
   String _currentPlayingSong = "Starboy";
+  String _currentPlayingArtist = "The Weeknd";
   String _searchQuery = "";
   bool _isLoading = false;
   List<dynamic> _searchResults = [];
@@ -116,8 +117,7 @@ class _LeafPageState extends State<LeafPage> {
     });
 
     try {
-      // Fetching live global music tracks from public iTunes & streaming index
-      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=50');
+      final url = Uri.parse('https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=song&limit=40');
       final response = await http.get(url).timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
@@ -153,14 +153,15 @@ class _LeafPageState extends State<LeafPage> {
     });
   }
 
-  void _playSong(String songName) {
+  void _playSong(String songName, String artistName) {
     setState(() {
       _isPlaying = true;
       _currentPlayingSong = songName;
+      _currentPlayingArtist = artistName;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Streaming Live: $songName 🎶"),
+        content: Text("Now Playing 30s Preview: $songName 🎶"),
         backgroundColor: Colors.redAccent,
         duration: const Duration(seconds: 1),
       ),
@@ -217,7 +218,7 @@ class _LeafPageState extends State<LeafPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search Bar
+              // Search Input Box
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
                 child: Container(
@@ -232,7 +233,7 @@ class _LeafPageState extends State<LeafPage> {
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                     decoration: const InputDecoration(
                       icon: Icon(Icons.search, color: Colors.redAccent),
-                      hintText: "Search T, A, Z, M or any world song...",
+                      hintText: "Type T, A, Z, M or any world song...",
                       hintStyle: TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                     ),
@@ -244,7 +245,7 @@ class _LeafPageState extends State<LeafPage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 8.0),
                   child: Text(
-                    _isLoading ? "SEARCHING LIVE..." : "GLOBAL RESULTS (${_searchResults.length})", 
+                    _isLoading ? "SEARCHING WORLD..." : "GLOBAL RESULTS (${_searchResults.length})", 
                     style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14)
                   ),
                 ),
@@ -252,7 +253,7 @@ class _LeafPageState extends State<LeafPage> {
                     ? const Padding(
                         padding: EdgeInsets.all(40.0),
                         child: Center(
-                          child: Text("No live songs found!", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                          child: Text("No songs found!", style: TextStyle(color: Colors.grey, fontSize: 16)),
                         ),
                       )
                     : ListView.builder(
@@ -275,12 +276,12 @@ class _LeafPageState extends State<LeafPage> {
                             title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
                             subtitle: Text(artist, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                             trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.redAccent, size: 30),
-                            onTap: () => _playSong(title),
+                            onTap: () => _playSong(title, artist),
                           );
                         },
                       ),
               ] else ...[
-                // Trending Banner
+                // Auto Swipe Banner
                 SizedBox(
                   height: 210,
                   child: PageView.builder(
@@ -289,7 +290,7 @@ class _LeafPageState extends State<LeafPage> {
                     itemBuilder: (context, index) {
                       final song = _trendingBannerSongs[index];
                       return GestureDetector(
-                        onTap: () => _playSong(song["title"]),
+                        onTap: () => _playSong(song["title"], song["artist"]),
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 16),
                           padding: const EdgeInsets.all(20),
@@ -326,7 +327,7 @@ class _LeafPageState extends State<LeafPage> {
                   child: Text("NOW PLAYING", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 13)),
                 ),
 
-                // Player Widget
+                // Music Player Controller
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(16),
@@ -352,7 +353,7 @@ class _LeafPageState extends State<LeafPage> {
                               children: [
                                 Text(_currentPlayingSong, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
                                 const SizedBox(height: 2),
-                                Text(_isPlaying ? "Live Audio Streaming..." : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                Text(_isPlaying ? "$_currentPlayingArtist (30s Stream)" : "Paused", style: const TextStyle(color: Colors.grey, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -364,7 +365,7 @@ class _LeafPageState extends State<LeafPage> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.skip_previous_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_trendingBannerSongs[0]["title"]),
+                            onPressed: () => _playSong(_trendingBannerSongs[0]["title"], _trendingBannerSongs[0]["artist"]),
                           ),
                           Container(
                             padding: const EdgeInsets.all(4),
@@ -379,7 +380,7 @@ class _LeafPageState extends State<LeafPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.skip_next_rounded, color: Colors.redAccent, size: 36),
-                            onPressed: () => _playSong(_trendingBannerSongs[1]["title"]),
+                            onPressed: () => _playSong(_trendingBannerSongs[1]["title"], _trendingBannerSongs[1]["artist"]),
                           ),
                         ],
                       ),
